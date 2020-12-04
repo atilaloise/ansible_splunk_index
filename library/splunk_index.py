@@ -13,7 +13,7 @@ version_added: "1.0.0"
 description: This module creates, configure and delete splunk indexes
 options:
     host:
-        description: Splunk host where de index should be created. Defaults to localhost
+        description: Splunk host where de index should be created. If it's a index cluster,point to the master here.Defaults to localhost
         required: true
         type: str
     port:
@@ -40,8 +40,16 @@ options:
         description: The name of the index to be manipulated.
         required: true
         type: str
-    enabled:
-        description: Enable index. defaults to True
+    push_bundle:
+        description: Set to true if this index will be seted up in a index master. defaults to False
+        required: false
+        type: bool
+    disabled:
+        description: disable index. defaults to False
+        required: false
+        type: bool
+    clean:
+        description: DANGER ZONE! it will Clean all index data. defaults to False
         required: false
         type: bool
     homePath:  
@@ -151,10 +159,6 @@ def index_delete(service, name):
     index = service.indexes[name]
     index.delete()
 
-
-
-
-
 from ansible.module_utils.basic import AnsibleModule
 
 def main():
@@ -169,6 +173,9 @@ def main():
             password=dict(type="str", required=True, no_log=True),
             scheme=dict(type="str", choices=["http", "https"], default="https"),
             version=dict(type="str", required=True),
+            disabled=dict(type="bool", default=False),
+            push_bundle=dict(type="bool", default=False),
+            clean=dict(type="bool", default=False),
             homePath=dict(type="str"),
             homePath_maxDataSizeMB=dict(type="str"),
             coldPath=dict(type="str"),
@@ -190,7 +197,7 @@ def main():
         module.exit_json(**result)
     
     requested_state = module.params["state"]
-    
+    index_disabled= module.params["disabled"]
     name = module.params["name"]
 
     splunk_connection={}
@@ -206,6 +213,7 @@ def main():
     index_new_config = {}
     
     
+
     if module.params["homePath"] is not None:
         index_config['homePath'] = module.params["homePath"]
 
@@ -231,20 +239,31 @@ def main():
     
     if requested_state == 'present':
         if not index_exists(service, name):
-            created_index = index_create(service, name, **index_config)
+            index_create(service, name, **index_config)
+            if module.params["disabled"]:
+                index_disable(service, name)
             result['changed']=True
         elif index_config:
             # remove unsuported values in update actions
             index_config.pop('homePath', None)
             index_config.pop('coldPath', None)
             existent_index = service.indexes[name]
+            
             for key in index_config:
                 if index_config[key] != existent_index.content[key]:
                     index_new_config[key] = index_config[key]
+
             if index_new_config:
                 index_update(service, name, **index_new_config)
                 result['changed']=True
-            
+
+        if index_disabled and (index_disabled != bool(int(existent_index.content["disabled"]))):
+            index_disable(service, name)
+            result['changed']=True
+        elif (not index_disabled) and (index_disabled != bool(int(existent_index.content["disabled"]))):
+            index_enable(service, name)
+            result['changed']=True
+        
     else:
         if index_exists(service, name):
             index_delete(service, name)
