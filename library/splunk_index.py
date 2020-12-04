@@ -40,20 +40,28 @@ options:
         description: The name of the index to be manipulated.
         required: true
         type: str
-    home_path:  
-        description: Path to store the index. same as "homePath_expanded"
+    enabled:
+        description: Enable index. defaults to True
+        required: false
+        type: bool
+    homePath:  
+        description: Path to store the index. same as "homePath_expanded". ONly used at creation time! You cant update this
         required: false
         type: str
-    home_max_size:
-        description: Max size for hot and Warm buckets inside home path. same as "homePath.maxDataSizeMB"
+    homePath_maxDataSizeMB:
+        description: Max size of homePath hot and Warm buckets inside home path. See "homePath.maxDataSizeMB" indexes.conf documentation.
         required: false
         type: int
-    cold_bucket_path: 
-        description: Path to store the index cold bucket. same as "coldPath_expanded"
+    coldPath: 
+        description: Path to store the index cold bucket. same as "coldPath_expanded". ONly used at creation time!You cant update this
         required: false
         type: str
-    cold_bucket_max_size: 
+    coldPath_maxDataSizeMB: 
         description: Max size cold buckets inside cold path. same as "coldPath.maxDataSizeMB"
+        required: false
+        type: str
+    maxTotalDataSizeMB: 
+        description: The maximum size of an index, in megabytes
         required: false
         type: str
     retention:  frozenTimePeriodInSecs
@@ -75,10 +83,11 @@ EXAMPLES = r'''
   splunk_index:
     name: myindex
     version: 8.1.0
-    home_path:
-    home_max_size:
-    cold_bucket_path:
-    cold_bucket_max_size:
+    homePath:
+    homePath_maxDataSizeMB:
+    coldPath:
+    coldPath_maxDataSizeMB:
+    maxTotalDataSizeMB:
     retention:
     state: present
 
@@ -122,12 +131,28 @@ def index_exists(service, name):
 def index_create(service, name, **kwargs):
     service.indexes.create(name, **kwargs)
 
-# def index_remove(service, name):
-#     return name, kwargs
+def index_update(service, name, **kwargs):
+    index = service.indexes[name]
+    index.update(**kwargs)
+
+def index_enable(service, name):
+    index = service.indexes[name]
+    index.enable()
+
+def index_disable(service, name):
+    index = service.indexes[name]
+    index.disable()
+
+def index_clean(service, name):
+    index = service.indexes[name]
+    index.clean()
+
+def index_delete(service, name):
+    index = service.indexes[name]
+    index.delete()
 
 
-# def index_update(service, name, **kwargs):
-#     return name, kwargs
+
 
 
 from ansible.module_utils.basic import AnsibleModule
@@ -144,10 +169,11 @@ def main():
             password=dict(type="str", required=True, no_log=True),
             scheme=dict(type="str", choices=["http", "https"], default="https"),
             version=dict(type="str", required=True),
-            home_path=dict(type="str"),
-            home_max_size=dict(type="str"),
-            cold_bucket_path=dict(type="str"),
-            cold_bucket_max_size=dict(type="str"),
+            homePath=dict(type="str"),
+            homePath_maxDataSizeMB=dict(type="str"),
+            coldPath=dict(type="str"),
+            coldPath_maxDataSizeMB=dict(type="str"),
+            maxTotalDataSizeMB=dict(type="str"),
             retention=dict(type="str"),
             state=dict(type="str", choices=["present", "absent"], default="present"),
         ),
@@ -178,21 +204,25 @@ def main():
 
     index_config = {}
     index_new_config = {}
+    
+    
+    if module.params["homePath"] is not None:
+        index_config['homePath'] = module.params["homePath"]
 
-    if module.params["home_path"] is not None:
-        index_config['home_path'] = module.params["home_path"]
-
-    if module.params["home_max_size"] is not None:
-        index_config['home_max_size']  = module.params["home_max_size"]
+    if module.params["homePath_maxDataSizeMB"] is not None:
+        index_config['homePath.maxDataSizeMB']  = module.params["homePath_maxDataSizeMB"]
         
-    if module.params["cold_bucket_path"] is not None:
-        index_config['cold_bucket_path'] = module.params["cold_bucket_path"]
+    if module.params["coldPath"] is not None:
+        index_config['coldPath'] = module.params["coldPath"]
 
-    if module.params["cold_bucket_max_size"] is not None:
-        index_config['cold_bucket_max_size'] = module.params["cold_bucket_max_size"]
+    if module.params["coldPath_maxDataSizeMB"] is not None:
+        index_config['coldPath.maxDataSizeMB'] = module.params["coldPath_maxDataSizeMB"]
 
     if module.params["retention"] is not None:
-        index_config['retention'] = module.params["retention"]
+        index_config['frozenTimePeriodInSecs'] = module.params["retention"]
+
+    if module.params["maxTotalDataSizeMB"] is not None:
+        index_config['maxTotalDataSizeMB'] = module.params["maxTotalDataSizeMB"]
 
     
     service = connect(**splunk_connection)
@@ -204,36 +234,23 @@ def main():
             created_index = index_create(service, name, **index_config)
             result['changed']=True
         elif index_config:
-            existent_index = index_exists(service, name)
+            # remove unsuported values in update actions
+            index_config.pop('homePath', None)
+            index_config.pop('coldPath', None)
+            existent_index = service.indexes[name]
             for key in index_config:
-                if index_config[key] != existent_index[key]:
+                if index_config[key] != existent_index.content[key]:
                     index_new_config[key] = index_config[key]
-                    
             if index_new_config:
                 index_update(service, name, **index_new_config)
                 result['changed']=True
             
     else:
-        if index_exists(name):
-            removed_index = index_remove(service, name)
+        if index_exists(service, name):
+            index_delete(service, name)
             result['changed']=True
         else:
             result['changed']=False
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
