@@ -40,6 +40,10 @@ options:
         description: The name of the index to be manipulated.
         required: true
         type: str
+    app:
+        description: The app where this index should be created. ATTENTION! The app shoud already exists! Defaults to "search" app.
+        required: true
+        type: str
     push_bundle:
         description: Set to true if this index will be seted up in a index master. defaults to False
         required: false
@@ -131,7 +135,7 @@ my_useful_info:
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from splunklib.client import connect
-from utils import *
+#from utils import *
 
 def index_exists(service, name):
     return True if name in service.indexes else False
@@ -174,6 +178,7 @@ def main():
             scheme=dict(type="str", choices=["http", "https"], default="https"),
             version=dict(type="str", required=True),
             disabled=dict(type="bool", default=False),
+            app=dict(type="str", default="search"),
             push_bundle=dict(type="bool", default=False),
             clean=dict(type="bool", default=False),
             homePath=dict(type="str"),
@@ -213,7 +218,8 @@ def main():
     index_new_config = {}
     
     
-
+    index_config['app'] = module.params["app"]
+    
     if module.params["homePath"] is not None:
         index_config['homePath'] = module.params["homePath"]
 
@@ -247,20 +253,20 @@ def main():
             # remove unsuported values in update actions
             index_config.pop('homePath', None)
             index_config.pop('coldPath', None)
-            existent_index = service.indexes[name]
-            
+            index_config.pop('app', None)
+
             for key in index_config:
-                if index_config[key] != existent_index.content[key]:
+                if index_config[key] != service.indexes[name].content[key]:
                     index_new_config[key] = index_config[key]
 
             if index_new_config:
                 index_update(service, name, **index_new_config)
                 result['changed']=True
 
-        if index_disabled and (index_disabled != bool(int(existent_index.content["disabled"]))):
+        if index_disabled and (index_disabled != bool(int(service.indexes[name].content["disabled"]))):
             index_disable(service, name)
             result['changed']=True
-        elif (not index_disabled) and (index_disabled != bool(int(existent_index.content["disabled"]))):
+        elif (not index_disabled) and (index_disabled != bool(int(service.indexes[name].content["disabled"]))):
             index_enable(service, name)
             result['changed']=True
         
