@@ -13,7 +13,7 @@ version_added: "1.0.0"
 description: This module creates, configure and delete splunk indexes
 options:
     host:
-        description: Splunk host where de index should be created. If it's a index cluster,point to the master here.Defaults to localhost
+        description: Splunk host where de index should be created.Defaults to localhost
         required: true
         type: str
     port:
@@ -44,10 +44,6 @@ options:
         description: The app where this index should be created. ATTENTION! The app shoud already exists! Defaults to "search" app.
         required: true
         type: str
-    push_bundle:
-        description: Set to true if this index will be seted up in a index master. defaults to False
-        required: false
-        type: bool
     disabled:
         description: disable index. defaults to False
         required: false
@@ -202,7 +198,8 @@ def main():
         module.exit_json(**result)
     
     requested_state = module.params["state"]
-    index_disabled= module.params["disabled"]
+    disable_index = module.params["disabled"]
+    clean_index = module.params["clean"]
     name = module.params["name"]
 
     splunk_connection={}
@@ -263,13 +260,17 @@ def main():
                 index_update(service, name, **index_new_config)
                 result['changed']=True
 
-        if index_disabled and (index_disabled != bool(int(service.indexes[name].content["disabled"]))):
+        if disable_index and (disable_index != bool(int(service.indexes[name].content["disabled"]))):
             index_disable(service, name)
             result['changed']=True
-        elif (not index_disabled) and (index_disabled != bool(int(service.indexes[name].content["disabled"]))):
+        elif (not disable_index) and (disable_index != bool(int(service.indexes[name].content["disabled"]))):
             index_enable(service, name)
             result['changed']=True
         
+        if clean_index:
+            index_clean(service, name)
+            result['changed']=True
+
     else:
         if index_exists(service, name):
             index_delete(service, name)
