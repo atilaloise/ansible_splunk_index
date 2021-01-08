@@ -106,7 +106,7 @@ EXAMPLES = r'''
     version: 8.1.0
     
 
-- name: Creates a splunk index and set custom configurations
+- name: Deletes a splunk index
   splunk_index:
     name: raw_search
     state: absent
