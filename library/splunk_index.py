@@ -10,7 +10,7 @@ DOCUMENTATION = r'''
 module: splunk_index
 short_description: Manipulate splunk indexes easily
 version_added: "1.0.0"
-description: This module creates, configure and delete splunk indexes
+description: This module manages splunk indexes
 options:
     host:
         description: Splunk host where de index should be created.Defaults to localhost
@@ -72,8 +72,8 @@ options:
         description: The maximum size of an index, in megabytes
         required: false
         type: str
-    retention:  frozenTimePeriodInSecs
-        description: The retention period. Could be in Seconds, minutes, days, months or years.
+    retention:  
+        description: The retention period. Same as frozenTimePeriodInSecs.
         required: false
         type: str
     state: 
@@ -89,42 +89,42 @@ author:
 EXAMPLES = r'''
 - name: Creates a splunk index and set custom configurations
   splunk_index:
-    name: myindex
-    version: 8.1.0
-    homePath:
-    homePath_maxDataSizeMB:
-    coldPath:
-    coldPath_maxDataSizeMB:
-    maxTotalDataSizeMB:
-    retention:
+    name: raw_search
+    app: search
+    maxTotalDataSizeMB: 800mb
+    home_path: /splunk/hotbkts/raw_search/
+    homePath_maxDataSizeMB: 500mb
+    coldPath: /splunk/coldbkts/raw_search/
+    coldPath_maxDataSizeMB: 600
+    retention: 3600
     state: present
-
-- name: Delete a splunk index
-  splunk_index:
-    name: myindex
+    host: localhost
+    port: 8090
+    username: admin
+    password: Sup3rpasswrd
+    scheme: https
     version: 8.1.0
+    
+
+- name: Creates a splunk index and set custom configurations
+  splunk_index:
+    name: raw_search
     state: absent
+    host: localhost
+    port: 8090
+    username: admin
+    password: Sup3rpasswrd
+    scheme: https
+    version: 8.1.0
 '''
 
-RETURN = r'''
-original_message:
-    description: The original name param that was passed in.
+RETURN = '''
+original_state:
+    description: The original state of the param that was passed in
     type: str
-    returned: always
-    sample: 'hello world'
-message:
-    description: The output message that the test module generates.
+changed_state:
+    description: The output state that the module generates
     type: str
-    returned: always
-    sample: 'goodbye'
-my_useful_info:
-    description: The dictionary containing information about your system.
-    type: dict
-    returned: always
-    sample: {
-        'foo': 'bar',
-        'answer': 42,
-    }
 '''
 
 
