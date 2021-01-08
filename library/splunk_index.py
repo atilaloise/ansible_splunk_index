@@ -93,7 +93,7 @@ EXAMPLES = r'''
     app: search
     maxTotalDataSizeMB: 800mb
     home_path: /splunk/hotbkts/raw_search/
-    homePath_maxDataSizeMB: 500mb
+    homePath_maxDataSizeMB: 500
     coldPath: /splunk/coldbkts/raw_search/
     coldPath_maxDataSizeMB: 600
     retention: 3600
@@ -175,7 +175,6 @@ def main():
             version=dict(type="str", required=True),
             disabled=dict(type="bool", default=False),
             app=dict(type="str", default="search"),
-            push_bundle=dict(type="bool", default=False),
             clean=dict(type="bool", default=False),
             homePath=dict(type="str"),
             homePath_maxDataSizeMB=dict(type="str"),

@@ -4,7 +4,8 @@
         "splunk_host":"localhost",
         "splunk_admin_port":"8089",
         "splunk_user":"admin",
-        "splunk_user_password":"Sup3rpasswrd",
+        "password":"Sup3rpasswrd",
+        "version":"8.1.0",
         "retention":"3600",
         "state": "present"
     }
