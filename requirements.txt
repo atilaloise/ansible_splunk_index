@@ -1,0 +1,2 @@
+ansible==2.10.5
+splunk-sdk==1.6.14

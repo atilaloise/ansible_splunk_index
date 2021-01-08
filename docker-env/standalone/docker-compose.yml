@@ -1,0 +1,15 @@
+version: "3.6"
+
+services:
+  splunk:
+    image: splunk/splunk
+    container_name: splunk
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=Sup3rpasswrd
+    volumes:
+      - ./var:/opt/splunk/var
+      - ./etc:/opt/splunk/etc
+    ports:
+      - 8000:8000
+      - 8089:8089

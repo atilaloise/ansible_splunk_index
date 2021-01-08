@@ -1,0 +1,20 @@
+{
+    "ANSIBLE_MODULE_ARGS": {
+        "name": "raw_search",
+        "disabled":"False",
+        "host":"localhost",
+        "port":"8089",
+        "username":"admin",
+        "password":"Sup3rpasswrd",
+        "scheme":"https",
+        "version":"8.1.0",
+        "homePath": "$SPLUNK_DB/sscustfaom/db",
+        "homePath_maxDataSizeMB": "400",
+        "coldPath": "$SPLUNK_DB/cusssstfaeom/cold/",
+        "coldPath_maxDataSizeMB": "600",
+        "maxTotalDataSizeMB":"800",
+        "retention":"3600",
+        "state": "present"
+    }
+
+}

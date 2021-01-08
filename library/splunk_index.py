@@ -10,10 +10,10 @@ DOCUMENTATION = r'''
 module: splunk_index
 short_description: Manipulate splunk indexes easily
 version_added: "1.0.0"
-description: This module creates, configure and delete splunk indexes
+description: This module manages splunk indexes
 options:
     host:
-        description: Splunk host where de index should be created. If it's a index cluster,point to the master here.Defaults to localhost
+        description: Splunk host where de index should be created.Defaults to localhost
         required: true
         type: str
     port:
@@ -44,10 +44,6 @@ options:
         description: The app where this index should be created. ATTENTION! The app shoud already exists! Defaults to "search" app.
         required: true
         type: str
-    push_bundle:
-        description: Set to true if this index will be seted up in a index master. defaults to False
-        required: false
-        type: bool
     disabled:
         description: disable index. defaults to False
         required: false
@@ -71,15 +67,15 @@ options:
     coldPath_maxDataSizeMB: 
         description: Max size cold buckets inside cold path. same as "coldPath.maxDataSizeMB"
         required: false
-        type: str
+        type: int
     maxTotalDataSizeMB: 
         description: The maximum size of an index, in megabytes
         required: false
-        type: str
-    retention:  frozenTimePeriodInSecs
-        description: The retention period. Could be in Seconds, minutes, days, months or years.
+        type: int
+    retention:  
+        description: The retention period. Same as frozenTimePeriodInSecs.
         required: false
-        type: str
+        type: int
     state: 
         description: The desired state for the index. Defaults to Present
         required: true
@@ -93,42 +89,42 @@ author:
 EXAMPLES = r'''
 - name: Creates a splunk index and set custom configurations
   splunk_index:
-    name: myindex
-    version: 8.1.0
-    homePath:
-    homePath_maxDataSizeMB:
-    coldPath:
-    coldPath_maxDataSizeMB:
-    maxTotalDataSizeMB:
-    retention:
+    name: raw_search
+    app: search
+    maxTotalDataSizeMB: 800
+    homePath: /splunk/hotbkts/raw_search/
+    homePath_maxDataSizeMB: 500
+    coldPath: /splunk/coldbkts/raw_search/
+    coldPath_maxDataSizeMB: 600
+    retention: 3600
     state: present
-
-- name: Delete a splunk index
-  splunk_index:
-    name: myindex
+    host: localhost
+    port: 8090
+    username: admin
+    password: Sup3rpasswrd
+    scheme: https
     version: 8.1.0
+    
+
+- name: Deletes a splunk index
+  splunk_index:
+    name: raw_search
     state: absent
+    host: localhost
+    port: 8090
+    username: admin
+    password: Sup3rpasswrd
+    scheme: https
+    version: 8.1.0
 '''
 
-RETURN = r'''
-original_message:
-    description: The original name param that was passed in.
+RETURN = '''
+original_state:
+    description: The original state of the param that was passed in
     type: str
-    returned: always
-    sample: 'hello world'
-message:
-    description: The output message that the test module generates.
+changed_state:
+    description: The output state that the module generates
     type: str
-    returned: always
-    sample: 'goodbye'
-my_useful_info:
-    description: The dictionary containing information about your system.
-    type: dict
-    returned: always
-    sample: {
-        'foo': 'bar',
-        'answer': 42,
-    }
 '''
 
 
@@ -179,14 +175,13 @@ def main():
             version=dict(type="str", required=True),
             disabled=dict(type="bool", default=False),
             app=dict(type="str", default="search"),
-            push_bundle=dict(type="bool", default=False),
             clean=dict(type="bool", default=False),
             homePath=dict(type="str"),
-            homePath_maxDataSizeMB=dict(type="str"),
+            homePath_maxDataSizeMB=dict(type="int"),
             coldPath=dict(type="str"),
-            coldPath_maxDataSizeMB=dict(type="str"),
-            maxTotalDataSizeMB=dict(type="str"),
-            retention=dict(type="str"),
+            coldPath_maxDataSizeMB=dict(type="int"),
+            maxTotalDataSizeMB=dict(type="int"),
+            retention=dict(type="int"),
             state=dict(type="str", choices=["present", "absent"], default="present"),
         ),
         required_if=([("state", "present", ["name", "password"])]),
@@ -195,14 +190,16 @@ def main():
 
     result = dict(
         changed=False,
-        changed_state={}
+        changed_state={},
+        geted_values={}
     )
 
     if module.check_mode:
         module.exit_json(**result)
     
     requested_state = module.params["state"]
-    index_disabled= module.params["disabled"]
+    disable_index = module.params["disabled"]
+    clean_index = module.params["clean"]
     name = module.params["name"]
 
     splunk_connection={}
@@ -256,20 +253,25 @@ def main():
             index_config.pop('app', None)
 
             for key in index_config:
-                if index_config[key] != service.indexes[name].content[key]:
+                if str(index_config[key]) != service.indexes[name].content[key]:
                     index_new_config[key] = index_config[key]
 
             if index_new_config:
                 index_update(service, name, **index_new_config)
                 result['changed']=True
+                result['changed_state']=index_new_config
 
-        if index_disabled and (index_disabled != bool(int(service.indexes[name].content["disabled"]))):
+        if disable_index and (disable_index != bool(int(service.indexes[name].content["disabled"]))):
             index_disable(service, name)
             result['changed']=True
-        elif (not index_disabled) and (index_disabled != bool(int(service.indexes[name].content["disabled"]))):
+        elif (not disable_index) and (disable_index != bool(int(service.indexes[name].content["disabled"]))):
             index_enable(service, name)
             result['changed']=True
         
+        if clean_index:
+            index_clean(service, name)
+            result['changed']=True
+
     else:
         if index_exists(service, name):
             index_delete(service, name)

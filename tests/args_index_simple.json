@@ -1,0 +1,13 @@
+{
+    "ANSIBLE_MODULE_ARGS": {
+        "name": "raw_search",
+        "host":"localhost",
+        "port":"8089",
+        "username":"admin",
+        "password":"Sup3rpasswrd",
+        "scheme":"https",
+        "version":"8.1.0",
+        "state": "present"
+    }
+
+}

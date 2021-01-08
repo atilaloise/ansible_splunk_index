@@ -1,0 +1,11 @@
+
+{
+    "ANSIBLE_MODULE_ARGS": {
+        "name": "raw_search",
+        "password":"Sup3rpasswrd",
+        "version":"8.1.0",
+        "maxTotalDataSizeMB": "100",
+        "state": "present"
+    }
+
+} 
