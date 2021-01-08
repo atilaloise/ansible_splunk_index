@@ -1,0 +1,19 @@
+---
+
+- hosts: splunk
+  connection: local
+  gather_facts: no
+
+  tasks:
+  - name: Creates a splunk index and set custom configurations
+    splunk_index:
+      name: raw_search
+      app: search
+      maxTotalDataSizeMB: 800
+      homePath_maxDataSizeMB: 500
+      coldPath_maxDataSizeMB: 600
+      retention: 3600
+      state: present
+      password: "{{ splunk_pass }}"
+      scheme: https
+      version: 8.1.0

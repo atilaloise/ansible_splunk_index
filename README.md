@@ -71,7 +71,7 @@ Just as in a playbook project. By default ansible searches for modules inside an
     name: raw_search
     app: search
     maxTotalDataSizeMB: 800mb
-    home_path: /splunk/hotbkts/raw_search/
+    homePath: /splunk/hotbkts/raw_search/
     homePath_maxDataSizeMB: 500
     coldPath: /splunk/coldbkts/raw_search/
     coldPath_maxDataSizeMB: 600
