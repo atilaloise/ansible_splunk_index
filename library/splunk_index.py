@@ -67,15 +67,15 @@ options:
     coldPath_maxDataSizeMB: 
         description: Max size cold buckets inside cold path. same as "coldPath.maxDataSizeMB"
         required: false
-        type: str
+        type: int
     maxTotalDataSizeMB: 
         description: The maximum size of an index, in megabytes
         required: false
-        type: str
+        type: int
     retention:  
         description: The retention period. Same as frozenTimePeriodInSecs.
         required: false
-        type: str
+        type: int
     state: 
         description: The desired state for the index. Defaults to Present
         required: true
@@ -91,8 +91,8 @@ EXAMPLES = r'''
   splunk_index:
     name: raw_search
     app: search
-    maxTotalDataSizeMB: 800mb
-    home_path: /splunk/hotbkts/raw_search/
+    maxTotalDataSizeMB: 800
+    homePath: /splunk/hotbkts/raw_search/
     homePath_maxDataSizeMB: 500
     coldPath: /splunk/coldbkts/raw_search/
     coldPath_maxDataSizeMB: 600
@@ -177,11 +177,11 @@ def main():
             app=dict(type="str", default="search"),
             clean=dict(type="bool", default=False),
             homePath=dict(type="str"),
-            homePath_maxDataSizeMB=dict(type="str"),
+            homePath_maxDataSizeMB=dict(type="int"),
             coldPath=dict(type="str"),
-            coldPath_maxDataSizeMB=dict(type="str"),
-            maxTotalDataSizeMB=dict(type="str"),
-            retention=dict(type="str"),
+            coldPath_maxDataSizeMB=dict(type="int"),
+            maxTotalDataSizeMB=dict(type="int"),
+            retention=dict(type="int"),
             state=dict(type="str", choices=["present", "absent"], default="present"),
         ),
         required_if=([("state", "present", ["name", "password"])]),
@@ -190,7 +190,8 @@ def main():
 
     result = dict(
         changed=False,
-        changed_state={}
+        changed_state={},
+        geted_values={}
     )
 
     if module.check_mode:
@@ -252,12 +253,13 @@ def main():
             index_config.pop('app', None)
 
             for key in index_config:
-                if index_config[key] != service.indexes[name].content[key]:
+                if str(index_config[key]) != service.indexes[name].content[key]:
                     index_new_config[key] = index_config[key]
 
             if index_new_config:
                 index_update(service, name, **index_new_config)
                 result['changed']=True
+                result['changed_state']=index_new_config
 
         if disable_index and (disable_index != bool(int(service.indexes[name].content["disabled"]))):
             index_disable(service, name)
