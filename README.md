@@ -24,13 +24,14 @@ Ansible module to manage splunk indexes
 # Dependencies
 THis module is build on top of Splunk SDK.
 
-To install Splunk sdk use "`pip install splunk-sdk`"
+To install Splunk sdk use "`pip3 install splunk-sdk`"
 
 # Testing 
+
 You can test this module calling it with python and passing a json argument file like these in `test` folder.
 
 ```bash
-python ./library/splunk_index.py ./test/args_index_simple.json
+python3 ./library/splunk_index.py ./tests/args_index_simple.json
 ```
 
 # Installing
